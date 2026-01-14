@@ -1,63 +1,60 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Search, TrendingUp, Plus } from 'lucide-react';
+import { User, Search, TrendingUp, Plus, Edit2 } from 'lucide-react';
 import { Card } from '@/app/components/ui/card';
 import { useApp } from '@/app/context/AppContext';
 import { BottomNav } from '@/app/components/BottomNav';
 
 export function ReportsVaultScreen() {
   const navigate = useNavigate();
-  const { reports } = useApp();
+  const { reports, editReport } = useApp();
   const [activeTab, setActiveTab] = useState('All');
 
   const categories = ['All', 'Blood', 'Biochemistry', 'Hormones', 'Imaging'];
 
-  const mockReports = [
-    {
-      id: '1',
-      name: 'CBC & Lipid Profile',
-      lab: 'Apollo Diagnostics',
-      date: '12 Aug 2023',
-      status: 'NORMAL',
-      statusColor: 'bg-green-500',
-      icon: '🩸',
-      iconBg: 'bg-green-100',
-      month: 'AUGUST 2023',
-    },
-    {
-      id: '2',
-      name: 'Thyroid Profile (T3, T4, TSH)',
-      lab: 'Thyrocare',
-      date: '15 Jul 2023',
-      status: 'ATTENTION',
-      statusColor: 'bg-orange-500',
-      icon: '⚠️',
-      iconBg: 'bg-orange-100',
-      month: 'AUGUST 2023',
-    },
-    {
-      id: '3',
-      name: 'Chest X-Ray PA View',
-      lab: 'Max Healthcare',
-      date: '02 Jun 2023',
-      status: 'REVIEWED',
-      statusColor: 'bg-blue-500',
-      icon: '📋',
-      iconBg: 'bg-blue-100',
-      month: 'AUGUST 2023',
-    },
-    {
-      id: '4',
-      name: 'Annual Health Checkup',
-      lab: 'Fortis Hospital',
-      date: '10 Mar 2023',
-      status: '',
-      statusColor: '',
-      icon: '🏥',
-      iconBg: 'bg-green-100',
-      month: 'MARCH 2023',
-    },
-  ];
+  // Helper to format date and add visual props
+  const processReports = (rawReports: any[]) => {
+    return rawReports.map(report => {
+      const dateObj = new Date(report.date);
+      const monthYear = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+
+      // Assign random or specific attributes based on name/category
+      let icon = '📋';
+      let iconBg = 'bg-blue-100';
+      let status = 'REVIEWED';
+      let statusColor = 'bg-blue-500';
+
+      if (report.name.toLowerCase().includes('blood') || report.name.toLowerCase().includes('cbc')) {
+        icon = '🩸';
+        iconBg = 'bg-red-100';
+        status = 'NORMAL';
+        statusColor = 'bg-green-500';
+      } else if (report.name.toLowerCase().includes('sugar') || report.name.toLowerCase().includes('glucose')) {
+        icon = '🍬';
+        iconBg = 'bg-yellow-100';
+        status = 'ATTENTION';
+        statusColor = 'bg-orange-500';
+      } else if (report.name.toLowerCase().includes('checkup')) {
+        icon = '🏥';
+        iconBg = 'bg-green-100';
+      }
+
+      return {
+        ...report,
+        lab: 'Uploaded Report', // Default lab name for user uploads
+        month: monthYear,
+        icon,
+        iconBg,
+        status,
+        statusColor
+      };
+    });
+  };
+
+  const processedReports = processReports(reports);
+
+  // Get unique months for timeline
+  const months = Array.from(new Set(processedReports.map(r => r.month)));
 
   return (
     <div className="min-h-screen bg-[#f5f7fa] pb-24">
@@ -78,11 +75,10 @@ export function ReportsVaultScreen() {
           <button
             key={cat}
             onClick={() => setActiveTab(cat)}
-            className={`text-sm font-semibold whitespace-nowrap pb-2 border-b-2 transition-colors ${
-              activeTab === cat
-                ? 'text-[#00D66C] border-[#00D66C]'
-                : 'text-gray-500 border-transparent'
-            }`}
+            className={`text-sm font-semibold whitespace-nowrap pb-2 border-b-2 transition-colors ${activeTab === cat
+              ? 'text-[#00D66C] border-[#00D66C]'
+              : 'text-gray-500 border-transparent'
+              }`}
           >
             {cat}
           </button>
@@ -110,7 +106,7 @@ export function ReportsVaultScreen() {
 
         {/* Timeline */}
         <div className="space-y-6">
-          {['AUGUST 2023', 'MARCH 2023'].map((month, monthIndex) => (
+          {months.map((month) => (
             <div key={month}>
               {/* Month Header */}
               <h3 className="text-xs font-bold text-gray-400 mb-4 tracking-wider">{month}</h3>
@@ -120,7 +116,7 @@ export function ReportsVaultScreen() {
                 {/* Timeline Line */}
                 <div className="absolute left-5 top-8 bottom-8 w-px bg-gray-200" />
 
-                {mockReports
+                {processedReports
                   .filter((r) => r.month === month)
                   .map((report) => (
                     <Link key={report.id} to={`/test/${report.id}`}>
@@ -134,9 +130,24 @@ export function ReportsVaultScreen() {
                           {/* Content */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 mb-1">
-                              <h3 className="font-bold text-gray-900 text-sm leading-tight">
-                                {report.name}
-                              </h3>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-gray-900 text-sm leading-tight">
+                                  {report.name}
+                                </h3>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault(); // Prevent navigation
+                                    e.stopPropagation();
+                                    const newName = window.prompt("Enter new report name:", report.name);
+                                    if (newName && editReport) {
+                                      editReport(report.id, { name: newName });
+                                    }
+                                  }}
+                                  className="p-1 hover:bg-gray-100 rounded-full"
+                                >
+                                  <Edit2 className="w-3 h-3 text-gray-400" />
+                                </button>
+                              </div>
                               {report.status && (
                                 <span className={`${report.statusColor} text-white text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap`}>
                                   {report.status}

@@ -1,194 +1,140 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, TrendingUp, TrendingDown, Info, Bot, Share2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { ArrowLeft, Share2, Download, AlertTriangle, CheckCircle, Pill, FileText, Activity } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
+import { Card, CardContent } from '@/app/components/ui/card';
+import { useApp } from '@/app/context/AppContext';
 
 export function TestExplanationScreen() {
   const navigate = useNavigate();
   const { testId } = useParams();
-  const [language, setLanguage] = useState<'en' | 'hi'>('en');
+  const { reports, addReminder } = useApp();
 
-  // Mock test data
-  const testData = {
-    name: language === 'en' ? 'Complete Blood Count (CBC)' : 'पूर्ण रक्त गणना (CBC)',
-    description: language === 'en'
-      ? 'A complete blood count test measures several components of your blood, including red blood cells, white blood cells, and platelets.'
-      : 'एक पूर्ण रक्त गणना परीक्षण आपके रक्त के कई घटकों को मापता है, जिसमें लाल रक्त कोशिकाएं, सफेद रक्त कोशिकाएं और प्लेटलेट्स शामिल हैं।',
-    purpose: language === 'en'
-      ? 'Doctors order CBC to check overall health, diagnose infections, detect anemia, and monitor various medical conditions.'
-      : 'डॉक्टर सीबीसी की जांच करते हैं ताकि समग्र स्वास्थ्य की जांच हो सके, संक्रमण का निदान हो, एनीमिया का पता लगाया जा सके।',
-    components: [
-      {
-        name: language === 'en' ? 'Red Blood Cells (RBC)' : 'लाल रक्त कोशिकाएं (RBC)',
-        normal: '4.5-5.5 million cells/mcL',
-        high: language === 'en' ? 'May indicate dehydration or lung disease' : 'निर्जलीकरण या फेफड़ों की बीमारी का संकेत हो सकता है',
-        low: language === 'en' ? 'May indicate anemia or blood loss' : 'एनीमिया या रक्त हानि का संकेत हो सकता है',
-      },
-      {
-        name: language === 'en' ? 'White Blood Cells (WBC)' : 'सफेद रक्त कोशिकाएं (WBC)',
-        normal: '4,000-11,000 cells/mcL',
-        high: language === 'en' ? 'May indicate infection or inflammation' : 'संक्रमण या सूजन का संकेत हो सकता है',
-        low: language === 'en' ? 'May indicate weakened immune system' : 'कमजोर प्रतिरक्षा प्रणाली का संकेत हो सकता है',
-      },
-      {
-        name: language === 'en' ? 'Platelets' : 'प्लेटलेट्स',
-        normal: '150,000-400,000/mcL',
-        high: language === 'en' ? 'May indicate clotting disorder' : 'क्लॉटिंग विकार का संकेत हो सकता है',
-        low: language === 'en' ? 'May indicate bleeding disorder' : 'रक्तस्राव विकार का संकेत हो सकता है',
-      },
-    ],
-    relatedTests: [
-      language === 'en' ? 'Hemoglobin A1c' : 'हीमोग्लोबिन A1c',
-      language === 'en' ? 'Iron Studies' : 'आयरन अध्ययन',
-      language === 'en' ? 'Vitamin B12' : 'विटामिन B12',
-    ],
-  };
+  const report = reports.find(r => r.id === testId);
+
+  if (!report) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Report Not Found</h2>
+        <p className="text-gray-500 mb-6">The report you are looking for does not exist or has been removed.</p>
+        <Button onClick={() => navigate('/reports')}>Go Back to Vault</Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-b-3xl shadow-lg">
-        <div className="flex items-center gap-4 mb-4">
-          <button onClick={() => navigate('/reports')} className="p-2 hover:bg-white/10 rounded-full">
-            <ArrowLeft className="w-6 h-6" />
+      <div className="bg-white px-6 py-4 flex items-center justify-between border-b border-gray-100 sticky top-0 z-10">
+        <button onClick={() => navigate('/reports')} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+          <ArrowLeft className="w-6 h-6 text-gray-700" />
+        </button>
+        <h1 className="text-lg font-bold text-gray-900 truncate max-w-[200px]">{report.name}</h1>
+        <div className="flex gap-2">
+          <button className="p-2 hover:bg-gray-100 rounded-full">
+            <Share2 className="w-5 h-5 text-gray-600" />
           </button>
-          <div className="flex-1">
-            <h1 className="text-2xl">{language === 'en' ? 'Test Details' : 'परीक्षण विवरण'}</h1>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-6">
+        {/* Date and Basic Info */}
+        <div className="flex items-center justify-between text-sm text-gray-500 px-1">
+          <span>Uploaded on {report.date}</span>
+          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">{report.category}</span>
+        </div>
+
+        {/* AI Analysis Summary */}
+        <Card className="border-none shadow-sm bg-gradient-to-br from-purple-50 to-white overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="w-5 h-5 text-purple-600" />
+              <h3 className="font-bold text-purple-900">AI Analysis</h3>
+            </div>
+            <p className="text-gray-700 leading-relaxed text-sm">
+              {report.analysis || "AI analysis is pending. Please check back shortly."}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Key Findings */}
+        <div>
+          <h3 className="font-bold text-gray-900 mb-3 px-1">Key Findings</h3>
+          <div className="grid gap-3">
+            {(report.keyFindings || [report.name]).map((finding, idx) => (
+              <Card key={idx} className="border-l-4 border-l-orange-400 shadow-sm">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <div className="bg-orange-100 p-2 rounded-full shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800 text-sm">{finding}</h4>
+                    <p className="text-xs text-gray-500 mt-1">Found in report analysis</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
 
-        {/* Language Toggle */}
-        <div className="flex gap-2">
-          <Button
-            variant={language === 'en' ? 'default' : 'outline'}
-            onClick={() => setLanguage('en')}
-            className={`flex-1 ${language === 'en' ? 'bg-white text-orange-600' : 'border-white text-white'}`}
-          >
-            English
-          </Button>
-          <Button
-            variant={language === 'hi' ? 'default' : 'outline'}
-            onClick={() => setLanguage('hi')}
-            className={`flex-1 ${language === 'hi' ? 'bg-white text-orange-600' : 'border-white text-white'}`}
-          >
-            हिंदी
-          </Button>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-4">
-        {/* Test Name */}
-        <Card className="border-2 border-orange-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-orange-500" />
-              {testData.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700">{testData.description}</p>
-          </CardContent>
-        </Card>
-
-        {/* Why Doctors Order This */}
-        <Card className="border-2 border-blue-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Info className="w-5 h-5 text-blue-500" />
-              {language === 'en' ? 'Why Doctors Order This Test' : 'डॉक्टर यह परीक्षण क्यों करते हैं'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700">{testData.purpose}</p>
-          </CardContent>
-        </Card>
-
-        {/* Components */}
-        <Card className="border-2 border-purple-200">
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {language === 'en' ? 'What This Test Checks' : 'यह परीक्षण क्या जांचता है'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {testData.components.map((component, index) => (
-              <div key={index} className="space-y-2">
-                <h4 className="font-semibold text-gray-900">{component.name}</h4>
-                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-semibold">{language === 'en' ? 'Normal Range:' : 'सामान्य सीमा:'}</span> {component.normal}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1 bg-red-50 p-3 rounded-lg border border-red-200">
-                    <div className="flex items-center gap-2 mb-1">
-                      <TrendingUp className="w-4 h-4 text-red-600" />
-                      <span className="text-sm font-semibold text-red-900">
-                        {language === 'en' ? 'High' : 'उच्च'}
-                      </span>
+        {/* Medicines Detected */}
+        {report.medicines && report.medicines.length > 0 && (
+          <div>
+            <h3 className="font-bold text-gray-900 mb-3 px-1">Prescribed Medicines</h3>
+            <div className="space-y-3">
+              {report.medicines.map((med, idx) => (
+                <Card key={idx} className="shadow-sm border-l-4 border-l-green-500">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-100 p-2 rounded-full">
+                        <Pill className="w-4 h-4 text-green-600" />
+                      </div>
+                      <span className="font-medium text-gray-800">{med}</span>
                     </div>
-                    <p className="text-xs text-red-800">{component.high}</p>
-                  </div>
-                  <div className="flex-1 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 mb-1">
-                      <TrendingDown className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-semibold text-blue-900">
-                        {language === 'en' ? 'Low' : 'निम्न'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-blue-800">{component.low}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Related Tests */}
-        <Card className="border-2 border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {language === 'en' ? 'Related Tests' : 'संबंधित परीक्षण'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {testData.relatedTests.map((test, index) => (
-                <div key={index} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                  <p className="text-gray-700">{test}</p>
-                </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-green-600 hover:text-green-700 h-8 text-xs"
+                      onClick={() => {
+                        addReminder({
+                          id: Date.now().toString() + idx,
+                          testName: med,
+                          frequency: 'Daily',
+                          nextDueDate: 'Daily',
+                          type: 'medicine',
+                          enabled: true
+                        });
+                        navigate('/reminders');
+                      }}
+                    >
+                      Set Reminder
+                    </Button>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Disclaimer */}
-        <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
-          <p className="text-xs text-yellow-900 text-center">
-            {language === 'en'
-              ? '⚠️ This information is for educational purposes only. Always consult your doctor for medical advice.'
-              : '⚠️ यह जानकारी केवल शैक्षिक उद्देश्यों के लिए है। चिकित्सा सलाह के लिए हमेशा अपने डॉक्टर से परामर्श करें।'}
-          </p>
-        </div>
+        {/* Summary (if available) */}
+        {report.summary && (
+          <Card className="bg-gray-50 border border-gray-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-gray-500" />
+                <h4 className="font-bold text-gray-700 text-sm">Full Summary</h4>
+              </div>
+              <p className="text-xs text-gray-600 leading-relaxed">{report.summary}</p>
+            </CardContent>
+          </Card>
+        )}
+
       </div>
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
-        <div className="flex items-center gap-3">
-          <Button
-            className="flex-1 bg-[#10C469] hover:bg-[#0da056] text-white text-lg h-14 rounded-2xl shadow-lg shadow-green-200"
-          >
-            <Bot className="w-6 h-6 mr-2" />
-            Ask AI Assistant
-          </Button>
-          <Button
-            className="h-14 w-14 rounded-2xl bg-white border-2 border-gray-100 hover:bg-gray-50 shadow-sm"
-            variant="ghost"
-          >
-            <Share2 className="w-6 h-6 text-[#10C469]" />
-          </Button>
-        </div>
+      {/* Footer Actions */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 flex gap-3">
+        <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
+          <Download className="w-4 h-4 mr-2" /> Download Original
+        </Button>
       </div>
     </div>
   );

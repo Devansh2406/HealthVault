@@ -14,11 +14,16 @@ export function ReportUploadScreen() {
   const [scanning, setScanning] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [detectedTests, setDetectedTests] = useState<string[]>([]);
+  const [extractedData, setExtractedData] = useState<{
+    tests: string[];
+    medicines: string[];
+    summary: string;
+  }>({ tests: [], medicines: [], summary: '' });
 
   const handleFileSelect = async (type: 'pdf' | 'photo') => {
     setUploading(true);
     setProgress(0);
-    
+
     // Simulate upload progress
     const interval = setInterval(() => {
       setProgress(prev => {
@@ -29,9 +34,24 @@ export function ReportUploadScreen() {
           // Simulate scanning
           setTimeout(() => {
             setScanning(false);
-            setDetectedTests(['Complete Blood Count', 'Lipid Profile', 'Blood Sugar']);
+
+            // Simulated Intelligence: Randomly decide context based on mock logic
+            const isBloodWork = Math.random() > 0.5;
+
+            const detected = isBloodWork ? {
+              tests: ['Complete Blood Count', 'HbA1c', 'Lipid Profile'],
+              medicines: ['Metformin 500mg', 'Atorvastatin 10mg'],
+              summary: 'Blood sugar levels are slightly elevated (HbA1c: 6.2%). Cholesterol is within normal limits. White blood cell count indicates no active infection.'
+            } : {
+              tests: ['X-Ray Chest PA', 'Physical Examination'],
+              medicines: ['Azithromycin 500mg', 'Paracetamol 650mg'],
+              summary: 'Lung fields are clear. No evidence of pneumonia or tuberculosis. Mild bronchial thickening observed.'
+            };
+
+            setDetectedTests(detected.tests);
+            setExtractedData(detected);
             setCompleted(true);
-          }, 2000);
+          }, 2500);
           return 100;
         }
         return prev + 10;
@@ -43,8 +63,12 @@ export function ReportUploadScreen() {
     addReport({
       id: Date.now().toString(),
       name: detectedTests[0] || 'New Report',
-      category: 'Blood Tests',
+      category: 'General',
       date: new Date().toISOString().split('T')[0],
+      medicines: extractedData.medicines,
+      summary: extractedData.summary,
+      analysis: 'Detailed analysis indicates stable condition with minor attention needed for dietary adjustments.',
+      keyFindings: detectedTests
     });
     navigate('/reports');
   };

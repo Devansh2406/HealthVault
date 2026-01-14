@@ -15,6 +15,10 @@ interface Report {
   category: string;
   date: string;
   file?: File;
+  analysis?: string;
+  medicines?: string[];
+  keyFindings?: string[];
+  summary?: string;
 }
 
 interface Reminder {
@@ -31,9 +35,11 @@ interface AppContextType {
   setUser: (user: User | null) => void;
   reports: Report[];
   addReport: (report: Report) => void;
+  editReport: (id: string, updates: Partial<Report>) => void;
   reminders: Reminder[];
   toggleReminder: (id: string) => void;
   addReminder: (reminder: Reminder) => void;
+  editReminder: (id: string, updates: Partial<Reminder>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -102,6 +108,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setReminders([...reminders, reminder]);
   };
 
+  const editReminder = (id: string, updates: Partial<Reminder>) => {
+    setReminders(reminders.map(r =>
+      r.id === id ? {
+        ...r, ...updates, // recalculate date logic if frequency changes? simplified for now
+      } : r
+    ));
+  };
+
+  const editReport = (id: string, updates: Partial<Report>) => {
+    setReports(reports.map(r =>
+      r.id === id ? { ...r, ...updates } : r
+    ));
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -109,9 +129,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUser,
         reports,
         addReport,
+        editReport,
         reminders,
         toggleReminder,
         addReminder,
+        editReminder,
       }}
     >
       {children}

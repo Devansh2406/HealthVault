@@ -61,8 +61,9 @@ const getTypeConfig = (type: string) => {
 
 export function RemindersScreen() {
   const navigate = useNavigate();
-  const { reminders, toggleReminder, addReminder } = useApp();
+  const { reminders, toggleReminder, addReminder, editReminder } = useApp();
   const [isOpen, setIsOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // New reminder form state
   const [newReminder, setNewReminder] = useState({
@@ -72,24 +73,59 @@ export function RemindersScreen() {
     type: 'sugar' as 'sugar' | 'bp' | 'lipid' | 'medicine' | 'other'
   });
 
-  const handleAddReminder = () => {
-    if (!newReminder.testName || !newReminder.nextDueDate) return;
-
-    // Format date nicely
-    const dateObj = new Date(newReminder.nextDueDate);
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const formattedDate = `${months[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
-
-    addReminder({
-      id: Date.now().toString(),
-      testName: newReminder.testName,
-      frequency: newReminder.type === 'medicine' ? newReminder.frequency : 'One-time',
-      nextDueDate: formattedDate,
-      type: newReminder.type,
-      enabled: true
+  const handleOpenDrawer = () => {
+    setNewReminder({
+      testName: '',
+      frequency: '',
+      nextDueDate: '',
+      type: 'sugar',
     });
+    setEditingId(null);
+    setIsOpen(true);
+  };
+
+  const handleAddReminder = () => {
+    if (!newReminder.testName) return;
+
+    // Validation: Require due date for non-medicine types
+    if (newReminder.type !== 'medicine' && !newReminder.nextDueDate) return;
+
+    let formattedDate = '';
+
+    if (newReminder.type === 'medicine') {
+      // For medicine, just show the frequency or a generic "Ongoing" if no date picked
+      if (newReminder.frequency === 'As Needed') {
+        formattedDate = 'As Needed';
+      } else {
+        formattedDate = newReminder.frequency || 'Daily';
+      }
+    } else {
+      // Format date nicely for tests
+      const dateObj = new Date(newReminder.nextDueDate);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      formattedDate = `${months[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+    }
+
+    if (editingId && editReminder) {
+      editReminder(editingId, {
+        testName: newReminder.testName,
+        frequency: newReminder.type === 'medicine' ? newReminder.frequency : 'One-time',
+        nextDueDate: newReminder.type === 'medicine' ? formattedDate : formattedDate, // simplified for now
+        type: newReminder.type,
+      });
+    } else {
+      addReminder({
+        id: Date.now().toString(),
+        testName: newReminder.testName,
+        frequency: newReminder.type === 'medicine' ? newReminder.frequency : 'One-time',
+        nextDueDate: formattedDate,
+        type: newReminder.type,
+        enabled: true
+      });
+    }
 
     setIsOpen(false);
+    setEditingId(null);
     // Reset form
     setNewReminder({
       testName: '',
@@ -156,10 +192,10 @@ export function RemindersScreen() {
                         Next Due: {reminder.nextDueDate}
                       </p>
 
-                      <div className="mt-4">
+                      <div className="mt-4 flex gap-2">
                         <Button
                           onClick={() => toggleReminder(reminder.id)}
-                          className={`h-10 rounded-full px-6 text-sm font-medium flex items-center gap-2 transition-all duration-300 ${reminder.enabled
+                          className={`h-10 flex-1 rounded-full text-sm font-medium flex items-center gap-2 transition-all duration-300 ${reminder.enabled
                             ? 'bg-[#10C469] hover:bg-[#0da056] text-white shadow-[#10C469]/30 shadow-lg'
                             : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
                             }`}
@@ -169,6 +205,23 @@ export function RemindersScreen() {
                             }`}>
                             <div className="w-3 h-3 bg-white rounded-full shadow-sm" />
                           </div>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10 rounded-full border-gray-200 hover:bg-gray-50"
+                          onClick={() => {
+                            setNewReminder({
+                              testName: reminder.testName,
+                              frequency: reminder.frequency,
+                              nextDueDate: reminder.nextDueDate, // raw date string might be needed if strictly controlling input, but taking displayed string for now or ignoring if complex
+                              type: reminder.type as any
+                            });
+                            setEditingId(reminder.id);
+                            setIsOpen(true);
+                          }}
+                        >
+                          <Pill className="w-4 h-4 text-gray-500" />
                         </Button>
                       </div>
                     </div>
@@ -209,20 +262,23 @@ export function RemindersScreen() {
 
       {/* Floating Action Button with Drawer */}
       <Drawer open={isOpen} onOpenChange={setIsOpen}>
-        <DrawerTrigger asChild>
-          <div className="fixed bottom-24 right-6 z-50">
-            <Button
-              className="w-16 h-16 rounded-full bg-[#10C469] hover:bg-[#0da056] shadow-lg shadow-[#10C469]/40 flex items-center justify-center p-0"
-            >
-              <Plus className="w-8 h-8 text-white" />
-            </Button>
-          </div>
-        </DrawerTrigger>
+        <div className="fixed bottom-24 right-6 z-50">
+          <Button
+            onClick={handleOpenDrawer}
+            className="w-16 h-16 rounded-full bg-[#10C469] hover:bg-[#0da056] shadow-lg shadow-[#10C469]/40 flex items-center justify-center p-0"
+          >
+            <Plus className="w-8 h-8 text-white" />
+          </Button>
+        </div>
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader>
-              <DrawerTitle className="text-2xl font-bold text-center">Add New Reminder</DrawerTitle>
-              <DrawerDescription className="text-center">Set up a new health check schedule</DrawerDescription>
+              <DrawerTitle className="text-2xl font-bold text-center">
+                {editingId ? 'Edit Reminder' : 'Add New Reminder'}
+              </DrawerTitle>
+              <DrawerDescription className="text-center">
+                {editingId ? 'Update your schedule' : 'Set up a new health check schedule'}
+              </DrawerDescription>
             </DrawerHeader>
             <div className="p-4 pb-0 space-y-4">
               <div className="space-y-2">
@@ -251,15 +307,17 @@ export function RemindersScreen() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="date">Next Due Date</Label>
-                <Input
-                  id="date"
-                  type="datetime-local"
-                  value={newReminder.nextDueDate}
-                  onChange={(e) => setNewReminder({ ...newReminder, nextDueDate: e.target.value })}
-                />
-              </div>
+              {newReminder.type !== 'medicine' && (
+                <div className="space-y-2">
+                  <Label htmlFor="date">Next Due Date</Label>
+                  <Input
+                    id="date"
+                    type="datetime-local"
+                    value={newReminder.nextDueDate}
+                    onChange={(e) => setNewReminder({ ...newReminder, nextDueDate: e.target.value })}
+                  />
+                </div>
+              )}
 
               {newReminder.type === 'medicine' && (
                 <div className="space-y-2">
