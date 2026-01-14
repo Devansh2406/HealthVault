@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, CheckCircle, AlertTriangle, Phone, MapPin, Home } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -7,9 +7,10 @@ type RiskLevel = 'green' | 'yellow' | 'red';
 
 export function RiskResultScreen() {
   const navigate = useNavigate();
-  
+  const location = useLocation();
+
   // This would be determined by symptom analysis
-  const riskLevel: RiskLevel = 'yellow';
+  const riskLevel: RiskLevel = (location.state?.riskLevel as RiskLevel) || 'yellow';
 
   const riskData = {
     green: {
@@ -97,17 +98,14 @@ export function RiskResultScreen() {
         {riskLevel === 'red' && (
           <div className="space-y-3">
             <Button
-              onClick={() => window.open('tel:108', '_self')}
+              onClick={() => navigate('/nearby?emergency=true')}
               className="w-full h-14 bg-red-500 hover:bg-red-600 text-lg"
             >
               <Phone className="w-6 h-6 mr-3" />
-              Call 108 Emergency
+              Call 108 / Emergency Map
             </Button>
             <Button
-              onClick={() => {
-                // In real app, this would open maps
-                alert('Opening nearest hospital in maps');
-              }}
+              onClick={() => navigate('/nearby?emergency=true')}
               variant="outline"
               className="w-full h-14 border-2 border-red-500 text-red-600 hover:bg-red-50 text-lg"
             >

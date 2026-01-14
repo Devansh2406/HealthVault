@@ -5,6 +5,7 @@ import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Card } from '@/app/components/ui/card';
 import { BottomNav } from '@/app/components/BottomNav';
+import { diseaseKnowledgeBase, Disease } from '@/app/data/diseaseKnowledgeBase';
 
 interface Message {
   id: string;
@@ -30,65 +31,29 @@ export function SymptomAssistantScreen() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const analyzeSymptoms = (text: string) => {
+
+
+  const analyzeSymptoms = (text: string): { matches: Disease[], generalAdvice?: string } => {
     const lowerText = text.toLowerCase();
 
-    if (lowerText.includes('headache') || lowerText.includes('head')) {
-      return {
-        condition: "Tension Headache or Migraine",
-        severity: "Moderate",
-        remedies: [
-          "Rest in a dark, quiet room.",
-          "Apply a cold or warm compress to your head/neck.",
-          "Stay hydrated.",
-        ],
-        doctor: "General Physician or Neurologist"
-      };
-    } else if (lowerText.includes('fever') || lowerText.includes('hot') || lowerText.includes('temperature')) {
-      return {
-        condition: "Viral Fever or Infection",
-        severity: "Moderate to High",
-        remedies: [
-          "Take plenty of fluids.",
-          "Rest adequately.",
-          "Use a cool cloth on your forehead.",
-        ],
-        doctor: "General Physician"
-      };
-    } else if (lowerText.includes('stomach') || lowerText.includes('pain') || lowerText.includes('belly')) {
-      return {
-        condition: "Indigestion or Gastritis",
-        severity: "Low to Moderate",
-        remedies: [
-          "Avoid heavy or spicy foods.",
-          "Drink ginger tea or warm water.",
-          "Use a heating pad on your stomach.",
-        ],
-        doctor: "Gastroenterologist"
-      };
-    } else if (lowerText.includes('chest') || lowerText.includes('breath')) {
-      return {
-        condition: "Potential Respiratory or Cardiac Issue",
-        severity: "High (Urgent Attention)",
-        remedies: [
-          "Sit in a comfortable position.",
-          "Avoid exertion.",
-          "Seek immediate medical help if pain persists.",
-        ],
-        doctor: "Cardiologist or Pulmonologist typically"
-      };
-    }
+    // Scoring system
+    const scores = diseaseKnowledgeBase.map(disease => {
+      let score = 0;
+      disease.common_symptoms.forEach(symptom => {
+        if (lowerText.includes(symptom.toLowerCase())) score += 2;
+      });
+      // Also check if disease name itself is mentioned
+      if (lowerText.includes(disease.name.toLowerCase())) score += 5;
 
-    return {
-      condition: "General Discomfort",
-      severity: "Unknown",
-      remedies: [
-        "Monitor your symptoms closely.",
-        "Maintain good hydration and rest.",
-        "Keep a log of when symptoms occur.",
-      ],
-      doctor: "General Physician"
-    };
+      return { disease, score };
+    });
+
+    const matches = scores
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.disease);
+
+    return { matches };
   };
 
   const handleSend = () => {
@@ -106,53 +71,122 @@ export function SymptomAssistantScreen() {
 
     // Simulated Analysis
     setTimeout(() => {
-      const analysis = analyzeSymptoms(userMessage.content as string);
+      const { matches } = analyzeSymptoms(userMessage.content as string);
+
+      let content: React.ReactNode;
+
+      if (matches.length > 0) {
+        // Take the top match, or if scores are close, maybe show multiple? 
+        // For simplicity, let's focus on the top match but mention others if ambiguous.
+        // User logic: "If symptoms match multiple diseases -> Say 'possible conditions' + advise doctor"
+
+        const topMatch = matches[0];
+        const isAmbiguous = matches.length > 1;
+
+        content = (
+          <div className="space-y-4">
+            {isAmbiguous ? (
+              <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                <p className="text-sm text-yellow-800 font-medium">Multiple conditions share these symptoms. Top possibilities:</p>
+                <ul className="list-disc list-inside text-sm text-yellow-700 mt-1">
+                  {matches.slice(0, 2).map((d) => <li key={d.id}>{d.name}</li>)}
+                </ul>
+              </div>
+            ) : (
+              <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="w-4 h-4 text-purple-600" />
+                  <span className="font-semibold text-purple-900">Possible Condition</span>
+                </div>
+                <p className="text-lg font-bold text-purple-800">{topMatch.name}</p>
+                <p className="text-sm text-purple-600 capitalize">Category: {topMatch.category}</p>
+                <p className="text-sm text-purple-700 mt-2">{topMatch.short_description}</p>
+              </div>
+            )}
+
+            {/* Treatment Knowledge - Safe */}
+            <div className="bg-green-50 p-3 rounded-lg border border-green-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Pill className="w-4 h-4 text-green-600" />
+                <span className="font-semibold text-green-800">General Treatment Approach</span>
+              </div>
+              <div className="space-y-2">
+                {topMatch.treatment_knowledge.filter(t => t.type === 'lifestyle').length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-green-700 uppercase mb-1">Lifestyle & Home Care</p>
+                    <ul className="list-disc list-inside text-sm text-green-700">
+                      {topMatch.treatment_knowledge.filter(t => t.type === 'lifestyle').map((t, i) => (
+                        <li key={i}>{t.description}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {topMatch.treatment_knowledge.filter(t => t.type === 'medication_class').length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-bold text-green-700 uppercase mb-1">Typical Medication Classes (Consult Doctor)</p>
+                    <ul className="list-disc list-inside text-sm text-green-700">
+                      {topMatch.treatment_knowledge.filter(t => t.type === 'medication_class').map((t, i) => (
+                        <li key={i}>{t.description}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Doctor & Emergency Triggers */}
+            <div className="grid grid-cols-1 gap-2">
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <Stethoscope className="w-4 h-4 text-blue-600" />
+                  <span className="font-semibold text-blue-800">When to see a doctor</span>
+                </div>
+                <p className="text-sm text-blue-700">{topMatch.doctor_visit_trigger}</p>
+              </div>
+
+              <div className="bg-red-50 p-3 rounded-lg border border-red-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                  <span className="font-semibold text-red-800">Red Flag Symptoms (Emergency)</span>
+                </div>
+                <p className="text-sm text-red-700 font-medium">{topMatch.emergency_trigger}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-400 italic text-center mt-2">
+              This is educational information only, not a medical diagnosis.
+            </p>
+          </div>
+        );
+
+      } else {
+        content = (
+          <div className="space-y-3">
+            <p>I couldn't match your symptoms to a specific condition in my database. However, here is some general advice:</p>
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+              <h4 className="font-semibold text-blue-800 mb-2">General Recommendations</h4>
+              <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
+                <li>Stay hydrated and rest.</li>
+                <li>Monitor your temperature and symptoms.</li>
+                <li>If symptoms persist for more than 2-3 days, consult a physician.</li>
+              </ul>
+            </div>
+            <p className="text-xs text-gray-500 italic mt-2">
+              For accurate diagnosis, please visit a doctor.
+            </p>
+          </div>
+        );
+      }
 
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
         type: 'bot',
-        content: (
-          <div className="space-y-3">
-            <p>I've analyzed your symptoms. Here is what I found:</p>
-
-            <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                <span className="font-semibold text-purple-900">Possible Cause</span>
-              </div>
-              <p className="text-sm text-purple-800">{analysis.condition}</p>
-            </div>
-
-            <div className="bg-green-50 rounded-lg p-3 border border-green-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Pill className="w-4 h-4 text-green-600" />
-                <span className="font-semibold text-green-800">Home Remedies</span>
-              </div>
-              <ul className="list-disc list-inside text-sm text-green-700 space-y-1">
-                {analysis.remedies.map((remedy, idx) => (
-                  <li key={idx}>{remedy}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Stethoscope className="w-4 h-4 text-blue-600" />
-                <span className="font-semibold text-blue-800">Recommended Doctor</span>
-              </div>
-              <p className="text-sm text-blue-700">{analysis.doctor}</p>
-            </div>
-
-            <p className="text-xs text-gray-500 italic mt-2">
-              Disclaimer: This is AI-generated advice. Please consult a real doctor for serious conditions.
-            </p>
-          </div>
-        )
+        content: content
       };
 
       setMessages(prev => [...prev, botResponse]);
       setIsTyping(false);
-    }, 2000);
+    }, 1500);
   };
 
   return (
@@ -185,8 +219,8 @@ export function SymptomAssistantScreen() {
 
             <div
               className={`rounded-2xl p-4 shadow-sm ${message.type === 'user'
-                  ? 'bg-[#651FFF] text-white rounded-tr-none'
-                  : 'bg-white border border-gray-100 rounded-tl-none'
+                ? 'bg-[#651FFF] text-white rounded-tr-none'
+                : 'bg-white border border-gray-100 rounded-tl-none'
                 }`}
             >
               <div className={message.type === 'user' ? 'text-white' : 'text-gray-800'}>

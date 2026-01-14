@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import 'leaflet/dist/leaflet.css';
 
 // Screens
 import { LoginScreen } from '@/app/components/screens/LoginScreen';
@@ -10,7 +11,9 @@ import { SymptomAssistantScreen } from '@/app/components/screens/SymptomAssistan
 import { RiskResultScreen } from '@/app/components/screens/RiskResultScreen';
 import { RemindersScreen } from '@/app/components/screens/RemindersScreen';
 import { ProfileScreen } from '@/app/components/screens/ProfileScreen';
+import { EditProfileScreen } from '@/app/components/screens/EditProfileScreen';
 import { AssistantScreen } from '@/app/components/screens/AssistantScreen';
+import { NearbyScreen } from '@/app/components/screens/NearbyScreen';
 
 // Context for user data
 import { AppProvider } from '@/app/context/AppContext';
@@ -25,12 +28,14 @@ export default function App() {
             <Route path="/" element={<HomeScreen />} />
             <Route path="/upload" element={<ReportUploadScreen />} />
             <Route path="/assistant" element={<AssistantScreen />} />
+            <Route path="/nearby" element={<NearbyScreen />} />
             <Route path="/reports" element={<ReportsVaultScreen />} />
             <Route path="/test/:testId" element={<TestExplanationScreen />} />
             <Route path="/symptom-check" element={<SymptomAssistantScreen />} />
             <Route path="/risk-result" element={<RiskResultScreen />} />
             <Route path="/reminders" element={<RemindersScreen />} />
             <Route path="/profile" element={<ProfileScreen />} />
+            <Route path="/edit-profile" element={<EditProfileScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

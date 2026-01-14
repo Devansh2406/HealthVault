@@ -1,19 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FolderOpen, Bell, User, Plus, Bot } from 'lucide-react';
+import { Home, FolderOpen, Bell, User, Plus, Bot, MapPin } from 'lucide-react';
 
 export function BottomNav() {
   const location = useLocation();
 
   const navItems = [
     { icon: Home, label: 'Home', path: '/' },
-    { icon: FolderOpen, label: 'Vault', path: '/reports' },
+    { icon: MapPin, label: 'Nearby', path: '/nearby' },
     { icon: Bot, label: 'Assistant', path: '/assistant' },
-    { icon: Bell, label: 'Reminders', path: '/reminders' },
+    { icon: FolderOpen, label: 'Vault', path: '/reports' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-[500]">
       <div className="flex items-center justify-around max-w-md mx-auto px-2">
         {navItems.map((item, index) => {
           const isActive = location.pathname === item.path;

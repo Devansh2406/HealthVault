@@ -64,8 +64,8 @@ export function ProfileScreen() {
               <Globe className="w-5 h-5 text-gray-600" />
               <h3 className="font-semibold text-gray-900">Language</h3>
             </div>
-            <Select 
-              value={user?.language || 'en'} 
+            <Select
+              value={user?.language || 'en'}
               onValueChange={(value) => setUser({ ...user, language: value as 'en' | 'hi' })}
             >
               <SelectTrigger className="h-12 bg-gray-50 border-gray-200 rounded-xl">
@@ -103,7 +103,7 @@ export function ProfileScreen() {
           <Button
             variant="outline"
             className="w-full h-14 justify-between border-2"
-            onClick={() => navigate('/onboarding')}
+            onClick={() => navigate('/edit-profile')}
           >
             <div className="flex items-center gap-3">
               <User className="w-5 h-5" />
